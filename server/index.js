@@ -97,3 +97,14 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+app.get("/", (req, res) => {
+  res.json({
+    message: "Noble Estates API is running",
+    status: "success"
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
