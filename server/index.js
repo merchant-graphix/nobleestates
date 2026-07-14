@@ -34,13 +34,20 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
+
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
 }));
+
 app.use(morgan('dev'));
+
 app.use(express.json({ limit: '10mb' }));
-app.use('/uploads', express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads')));
+
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads'))
+);
 
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -79,33 +86,34 @@ app.use('/api/admin', authenticate, adminOnly, adminRoutes);
 app.get('/api/cities', async (req, res) => {
   try {
     const { default: pool } = await import('./db/pool.js');
+
     const result = await pool.query(
-      'SELECT DISTINCT city FROM properties WHERE status = $1 ORDER BY city', ['active']
+      'SELECT DISTINCT city FROM properties WHERE status = $1 ORDER BY city',
+      ['active']
     );
-    res.json(result.rows.map(r => r.city));
+
+    res.json(result.rows.map(row => row.city));
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
-app.get("/", (req, res) => {
+// API health check
+app.get('/', (req, res) => {
   res.json({
-    message: "Noble Estates API is running",
-    status: "success"
+    message: 'Noble Estates API is running',
+    status: 'success'
   });
 });
 
-const PORT = process.env.PORT || 5000;
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    message: 'Something went wrong!'
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
