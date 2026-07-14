@@ -31,12 +31,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Security headers
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
+// CORS configuration
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://nobleestates.vercel.app",
+  "https://nobleestates-393f33k7c-merchant-graphix.vercel.app"
+];
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
 }));
 
@@ -49,29 +63,40 @@ app.use(
   express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads'))
 );
 
+
+// Rate limiting
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
-  message: { message: 'Too many requests, please try again later.' },
+  message: {
+    message: 'Too many requests, please try again later.'
+  },
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  message: { message: 'Too many authentication attempts, please try again later.' },
+  message: {
+    message: 'Too many authentication attempts, please try again later.'
+  },
 });
 
 const paymentLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
-  message: { message: 'Too many payment attempts, please try again later.' },
+  message: {
+    message: 'Too many payment attempts, please try again later.'
+  },
 });
+
 
 app.use('/api/', generalLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/payments', paymentLimiter);
 
+
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/favorites', authenticate, favoriteRoutes);
@@ -83,6 +108,8 @@ app.use('/api/notifications', authenticate, notificationRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/admin', authenticate, adminOnly, adminRoutes);
 
+
+// Cities API
 app.get('/api/cities', async (req, res) => {
   try {
     const { default: pool } = await import('./db/pool.js');
@@ -93,13 +120,18 @@ app.get('/api/cities', async (req, res) => {
     );
 
     res.json(result.rows.map(row => row.city));
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+
+    res.status(500).json({
+      message: 'Server error'
+    });
   }
 });
 
-// API health check
+
+// Health check
 app.get('/', (req, res) => {
   res.json({
     message: 'Noble Estates API is running',
@@ -107,14 +139,18 @@ app.get('/', (req, res) => {
   });
 });
 
+
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
+
   res.status(500).json({
     message: 'Something went wrong!'
   });
 });
 
+
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
