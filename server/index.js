@@ -31,10 +31,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+
 // Security headers
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-}));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: {
+      policy: 'cross-origin',
+    },
+  })
+);
+
 
 // CORS configuration
 const allowedOrigins = [
@@ -43,24 +49,34 @@ const allowedOrigins = [
   "https://nobleestates-393f33k7c-merchant-graphix.vercel.app"
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
 
 app.use(morgan('dev'));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(
+  express.json({
+    limit: '10mb',
+  })
+);
+
 
 app.use(
   '/uploads',
-  express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads'))
+  express.static(
+    path.join(__dirname, process.env.UPLOAD_DIR || 'uploads')
+  )
 );
 
 
@@ -69,23 +85,25 @@ const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
   message: {
-    message: 'Too many requests, please try again later.'
+    message: 'Too many requests, please try again later.',
   },
 });
+
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   message: {
-    message: 'Too many authentication attempts, please try again later.'
+    message: 'Too many authentication attempts, please try again later.',
   },
 });
+
 
 const paymentLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
   message: {
-    message: 'Too many payment attempts, please try again later.'
+    message: 'Too many payment attempts, please try again later.',
   },
 });
 
@@ -125,7 +143,7 @@ app.get('/api/cities', async (req, res) => {
     console.error(err);
 
     res.status(500).json({
-      message: 'Server error'
+      message: 'Server error',
     });
   }
 });
@@ -135,7 +153,7 @@ app.get('/api/cities', async (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     message: 'Noble Estates API is running',
-    status: 'success'
+    status: 'success',
   });
 });
 
@@ -145,7 +163,7 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
 
   res.status(500).json({
-    message: 'Something went wrong!'
+    message: 'Something went wrong!',
   });
 });
 
